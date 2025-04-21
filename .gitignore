@@ -1,1 +1,5 @@
 LongDarkBackup
+__debug_*
+.vscode
+testRestore/
+.DS_Store

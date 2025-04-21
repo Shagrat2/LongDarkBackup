@@ -8,13 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"syscall"
 	"time"
-)
-
-var (
-	fDataDir   = "/Users/ivan/.local/share/Hinterland"
-	fBackupDir = "/Users/ivan/Documents/LongDarkBackup"
 )
 
 // func FileMD5(path string) string {
@@ -44,12 +38,12 @@ func copyFileContents(src, dst string) (err error) {
 	defer in.Close()
 
 	// Lock src
-	err = syscall.Flock(int(in.Fd()), syscall.LOCK_EX)
+	err = LockFile(in)
 	if err != nil {
 		log.Println("Error lock src", err)
 		return
 	}
-	defer syscall.Flock(int(in.Fd()), syscall.LOCK_UN)
+	defer UnLockFile(in)
 
 	// Create dest
 	out, err := os.Create(dst)
@@ -73,7 +67,7 @@ func copyFileContents(src, dst string) (err error) {
 func DoScan() {
 
 	// Scan files
-	itms, err := NewListScan(fDataDir)
+	itms, err := NewListScan(DataFolder)
 	if err != nil {
 		log.Println(err)
 		return
@@ -102,7 +96,7 @@ func DoScan() {
 
 		time.Sleep(1 * time.Second)
 
-		tmpList, err := NewListScan(fDataDir)
+		tmpList, err := NewListScan(DataFolder)
 		if err != nil {
 			log.Println(err)
 			return
@@ -123,7 +117,7 @@ func DoScan() {
 
 	// Backup
 	fFolderName := time.Now().Format("2006-01-02-15-04-05")
-	fToFolder := filepath.Join(fBackupDir, fFolderName)
+	fToFolder := filepath.Join(BackupFolder, fFolderName)
 	os.MkdirAll(fToFolder, 0755)
 
 	log.Println("######")

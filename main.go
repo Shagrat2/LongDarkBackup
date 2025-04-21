@@ -1,20 +1,21 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
+	"runtime"
 	"time"
 
-	"github.com/getlantern/systray"
 	"github.com/kardianos/service"
 	"github.com/skratchdot/open-golang/open"
-
-	"git2.jad.ru/LongDarkBackup/icon"
+	"golang.design/x/mainthread"
 )
 
 const (
-	cPeriod  = 5 * time.Second
-	cPortNum = "45192"
+	cPeriod = 5 * time.Second
 )
 
 // Server - HTTP server
@@ -22,31 +23,14 @@ type Server struct {
 	CStop chan bool
 }
 
-var s service.Service
+var (
+	cHost          = "localhost:45192"
+	FlagStartOnRun = "yes"
+	DataFolder     = ""
+	BackupFolder   = ""
 
-func onReady() {
-	systray.SetIcon(icon.Data)
-	//systray.SetTitle("Awesome App")
-	systray.SetTooltip("LD backup")
-
-	go func() {
-		mUrl := systray.AddMenuItem("Open", "Open settings")
-
-		mQuit := systray.AddMenuItem("Quit", "Close app")
-
-		for {
-			select {
-			case <-mUrl.ClickedCh:
-				open.Run("http://localhost:" + cPortNum)
-			case <-mQuit.ClickedCh:
-				s.Stop()
-				systray.Quit()
-				return
-			}
-		}
-
-	}()
-}
+	s service.Service
+)
 
 // Start -
 func (t *Server) Start(s service.Service) error {
@@ -57,8 +41,52 @@ func (t *Server) Start(s service.Service) error {
 		log.Println("Running under service manager.")
 	}
 
-	go systray.Run(onReady, nil)
+	// Set default
+	DataFolder = os.Getenv("LDB_DATA_DIR")
+	BackupFolder = os.Getenv("LDB_BACKUP_DIR")
 
+	switch runtime.GOOS {
+	case "darwin", "linux":
+		fHomeDir, _ := os.UserHomeDir()
+
+		if DataFolder == "" {
+			DataFolder = filepath.Join(fHomeDir, ".local/share/Hinterland/TheLongDark/Survival")
+		}
+
+		if BackupFolder == "" {
+			BackupFolder = filepath.Join(fHomeDir, "Documents/LongDarkBackup")
+		}
+
+	case "windows":
+
+		if DataFolder == "" {
+			fAppData, _ := os.UserCacheDir()
+			DataFolder = filepath.Join(fAppData, "Hinterland/TheLongDark/Survival")
+		}
+
+		if BackupFolder == "" {
+			fHomeDir, _ := os.UserHomeDir()
+			BackupFolder = filepath.Join(fHomeDir, "Documents/LongDarkBackup")
+		}
+
+	default:
+		return fmt.Errorf("unknown OS")
+	}
+
+	if DataFolder == "" {
+		return fmt.Errorf("DataFolder is empty")
+	}
+	if _, err := os.Stat(DataFolder); errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("DataFolder is not exist")
+	}
+	if BackupFolder == "" {
+		return fmt.Errorf("BackupFolder is empty")
+	}
+	if _, err := os.Stat(BackupFolder); errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("BackupFolder is not exist")
+	}
+
+	t.CStop = make(chan bool)
 	go func() {
 
 		fTimer := time.NewTicker(cPeriod)
@@ -73,6 +101,16 @@ func (t *Server) Start(s service.Service) error {
 		}
 	}()
 
+	// app
+	err := appSrv()
+	if err != nil {
+		return err
+	}
+
+	if FlagStartOnRun != "" {
+		open.Run("http://" + cHost)
+	}
+
 	return nil
 }
 
@@ -83,6 +121,8 @@ func (t *Server) Stop(s service.Service) error {
 	log.Println("Stoping")
 
 	t.CStop <- true
+
+	StopSysTray()
 
 	return nil
 }
@@ -107,9 +147,15 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = s.Run()
-	if err != nil {
-		panic(fmt.Errorf("error run server: %v", err))
-	}
+	mainthread.Init(func() {
 
+		mainthread.Go(func() {
+			StartSysTray()
+		})
+
+		err = s.Run()
+		if err != nil {
+			panic(fmt.Errorf("error run server: %v", err))
+		}
+	})
 }
