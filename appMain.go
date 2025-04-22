@@ -42,7 +42,7 @@ func (h *MainPage) Render() app.UI {
 					app.Span().Text("Condition: "+info.Condition), app.Br(),
 					app.Span().Text("World explored: "+info.WorldExplored), app.Br(),
 					app.Span().Text("Game mode: "+info.GameMode), app.Br(),
-					app.Img().Src("data:image/png;base64,"+base64.StdEncoding.EncodeToString(img)),
+					app.Img().Src("data:image/jpeg;base64,"+base64.StdEncoding.EncodeToString(img)),
 					app.Br(),
 					app.A().Text("Restore").Href("/restore/"+fPath),
 				),

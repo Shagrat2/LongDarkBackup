@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -14,16 +15,16 @@ import (
 )
 
 type cacheItem struct {
-	DisplayName   string
-	GameMode      string
-	InternalName  string
-	Timestamp     string
-	XPMode        string
-	Region        string
-	Persona       string
-	Condition     string
-	HoursSurvived string
-	WorldExplored string
+	DisplayName   string `json:"display_name,omitempty"`
+	GameMode      string `json:"game_mode,omitempty"`
+	InternalName  string `json:"internal_name,omitempty"`
+	Timestamp     string `json:"timestamp,omitempty"`
+	XPMode        string `json:"xp_mode,omitempty"`
+	Region        string `json:"region,omitempty"`
+	Persona       string `json:"persona,omitempty"`
+	Condition     string `json:"condition,omitempty"`
+	HoursSurvived string `json:"hours_survived,omitempty"`
+	WorldExplored string `json:"world_explored,omitempty"`
 }
 
 // type Timespan time.Duration
@@ -37,7 +38,32 @@ func loadData(id string) (data cacheItem, img []byte, err error) {
 	// Find get filename
 	fFileName := ""
 
-	err = filepath.WalkDir(filepath.Join(BackupFolder, id), func(path string, d os.DirEntry, err error) error {
+	fDir := filepath.Join(BackupFolder, id)
+
+	// Get cached info
+	fInfoFile := filepath.Join(fDir, "info.json")
+	fJpegFile := filepath.Join(fDir, "info.jpeg")
+
+	_, sErr := os.Stat(fInfoFile)
+	if !errors.Is(sErr, os.ErrNotExist) {
+		var fInfoFileData []byte
+		fInfoFileData, err = os.ReadFile(fInfoFile)
+		if err != nil {
+			return
+		}
+
+		// Get info
+		err = json.Unmarshal(fInfoFileData, &data)
+		if err != nil {
+			return
+		}
+
+		// Load image
+		img, err = os.ReadFile(fJpegFile)
+		return
+	}
+
+	err = filepath.WalkDir(fDir, func(path string, d os.DirEntry, err error) error {
 		if d == nil || d.IsDir() {
 			return nil
 		}
@@ -181,6 +207,15 @@ func loadData(id string) (data cacheItem, img []byte, err error) {
 
 		}
 	}
+
+	// Save info.json
+	bInfo, sErr := json.Marshal(data)
+	if sErr == nil {
+		os.WriteFile(fInfoFile, bInfo, 0644)
+	}
+
+	// Save scrennshot
+	os.WriteFile(fJpegFile, img, 0644)
 
 	return
 }
