@@ -69,7 +69,7 @@ func loadData(id string) (data cacheItem, img []byte, err error) {
 		}
 
 		// Skip file
-		if !strings.HasPrefix(d.Name(), "sandbox6") {
+		if !strings.HasPrefix(d.Name(), "sandbox") {
 			return nil
 		}
 

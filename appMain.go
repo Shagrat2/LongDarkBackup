@@ -2,9 +2,9 @@ package main
 
 import (
 	"encoding/base64"
+	"log"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/maxence-charriere/go-app/v10/pkg/app"
 )
@@ -18,16 +18,21 @@ func (h *MainPage) Render() app.UI {
 	list := make([]app.UI, 0)
 
 	err := filepath.WalkDir(BackupFolder, func(path string, d os.DirEntry, err error) error {
-		if d == nil || d.IsDir() {
+		if d == nil || !d.IsDir() {
 			return nil
 		}
 
-		// Skip file
-		if !strings.HasPrefix(d.Name(), "sandbox") {
+		// Check file
+		fHasSandbox := FileExists(path, "sandbox")
+		fHasProfile := FileExists(path, "profile")
+
+		if !fHasSandbox || !fHasProfile {
 			return nil
 		}
 
-		fPath := strings.Trim(filepath.Dir(path[len(BackupFolder):]), "/\\")
+		fPath := filepath.Base(path)
+
+		log.Println("Parse:", fPath)
 
 		info, img, _ := loadData(fPath)
 
