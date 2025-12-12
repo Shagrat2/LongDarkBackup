@@ -1,10 +1,10 @@
 package main
 
 import (
-	"encoding/base64"
-	"log"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 
 	"github.com/maxence-charriere/go-app/v10/pkg/app"
 )
@@ -15,8 +15,7 @@ type MainPage struct {
 
 func (h *MainPage) Render() app.UI {
 
-	list := make([]app.UI, 0)
-
+	fMap := make(map[string]string)
 	err := filepath.WalkDir(BackupFolder, func(path string, d os.DirEntry, err error) error {
 		if d == nil || !d.IsDir() {
 			return nil
@@ -31,28 +30,18 @@ func (h *MainPage) Render() app.UI {
 		}
 
 		fPath := filepath.Base(path)
+		// log.Println("Parse:", fPath)
 
-		log.Println("Parse:", fPath)
+		info, _, _ := loadData(fPath)
 
-		info, img, _ := loadData(fPath)
+		fDate, ok := fMap[info.DisplayName]
+		if ok {
+			if strings.Compare(fDate, fPath) <= 0 {
+				return nil
+			}
+		}
 
-		list = append(list,
-			app.Details().Body(
-				app.Summary().Body(
-					app.Span().Text(fPath), app.Span().Text(info.DisplayName), app.Br(),
-					app.Span().Text(info.XPMode), app.Span().Text(info.Region), app.Br(),
-					app.Span().Text(info.HoursSurvived),
-				),
-				app.P().Body(
-					app.Span().Text("Condition: "+info.Condition), app.Br(),
-					app.Span().Text("World explored: "+info.WorldExplored), app.Br(),
-					app.Span().Text("Game mode: "+info.GameMode), app.Br(),
-					app.Img().Src("data:image/jpeg;base64,"+base64.StdEncoding.EncodeToString(img)),
-					app.Br(),
-					app.A().Text("Restore").Href("/restore/"+fPath),
-				),
-			),
-		)
+		fMap[info.DisplayName] = fPath
 
 		return nil
 	})
@@ -65,6 +54,29 @@ func (h *MainPage) Render() app.UI {
 					Class("text-error").
 					Text("Error reading folder"),
 			)
+	}
+
+	keys := make([]string, 0, len(fMap))
+	for k := range fMap {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	list := make([]app.UI, 0)
+	for _, key := range keys {
+
+		fPath, ok := fMap[key]
+		if !ok {
+			continue
+		}
+
+		list = append(list,
+			app.Li().Body(
+				app.su
+			),
+			app.A().Href("/list/"+fPath).Text(key),
+		)
 	}
 
 	return app.Div().

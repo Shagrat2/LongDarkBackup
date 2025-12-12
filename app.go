@@ -33,7 +33,8 @@ func statFile(Data []byte, MIME string) http.Handler {
 
 func appSrv() error {
 
-	app.Route("/", func() app.Composer { return &MainPage{} })
+	app.Route("/", func() app.Composer { return &ListPage{} })
+	//app.Route("/list/", func() app.Composer { return &ListPage{} })
 	app.RunWhenOnBrowser()
 
 	http.Handle("/", &app.Handler{
