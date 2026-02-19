@@ -10,45 +10,46 @@ LongDarkBackup — кроссплатформенное Go-приложение 
 
 ```bash
 # Текущая платформа
-go build -o LongDarkBackup .
+go build -o LongDarkBackup ./app/
 
 # Windows
-GOOS=windows GOARCH=amd64 go build -o LDBackup-amd64.exe .
+GOOS=windows GOARCH=amd64 go build -o LDBackup-amd64.exe ./app/
 
 # Linux
-GOOS=linux GOARCH=amd64 go build -o LongDarkBackup .
+GOOS=linux GOARCH=amd64 go build -o LongDarkBackup ./app/
 
 # macOS
-GOOS=darwin GOARCH=amd64 go build -o LongDarkBackup .
+GOOS=darwin GOARCH=amd64 go build -o LongDarkBackup ./app/
 
 # WASM (для веб-версии UI)
-GOOS=js GOARCH=wasm go build -o web/app.wasm .
+GOOS=js GOARCH=wasm go build -o app/web/app.wasm ./app/
 ```
 
 Тесты отсутствуют. Makefile и CI/CD нет — используются VS Code tasks (.vscode/tasks.json).
 
 ## Архитектура
 
-Весь код в одном пакете `main`. Платформо-зависимая логика разделена через build-теги в именах файлов (`_win`, `_nix`, `_wasm`).
+Весь код в пакете `main` в директории `app/`. Платформо-зависимая логика разделена через build-теги в именах файлов (`_win`, `_nix`, `_wasm`). Статические ресурсы в `app/web/`.
 
 ### Основной цикл
 
-`main.go` → `kardianos/service` (Windows Service) + `mainthread` → запуск systray + HTTP-сервер на `localhost:45192` + фоновое сканирование.
+`app/main.go` → `kardianos/service` (Windows Service) + `mainthread` → запуск systray + HTTP-сервер на `localhost:45192` + фоновое сканирование.
 
 ### Ключевые модули
 
 | Файл | Назначение |
 |------|-----------|
-| `main.go` | Точка входа, сервис, systray, определение путей к сохранениям |
-| `scan.go` | Фоновое сканирование изменений (каждые 5 сек, ожидание до 30 сек) |
-| `fileList.go` | Отслеживание файлов по времени модификации |
-| `cache.go` | Парсинг сохранений: LZF-декомпрессия → JSON → метаданные и скриншот |
-| `app.go` | HTTP-сервер, маршруты go-app/v10, встроенные статические ресурсы |
-| `appList.go` | Веб-UI: список бэкапов, организованных по имени/дате |
-| `restore.go` | HTTP-обработчик `/restore/{id}` — восстановление из бэкапа |
-| `lockFile_*.go` | Блокировка файлов: Windows (LockFileEx), Unix (flock), WASM (no-op) |
-| `systray_*.go` | System tray: полная реализация (не-WASM) / stub (WASM) |
-| `statFIle.go` | `//go:embed` — встраивание favicon, CSS, WASM в бинарник |
+| `app/main.go` | Точка входа, сервис, systray, определение путей к сохранениям |
+| `app/scan.go` | Фоновое сканирование изменений (каждые 5 сек, ожидание до 30 сек) |
+| `app/fileList.go` | Отслеживание файлов по времени модификации |
+| `app/cache.go` | Парсинг сохранений: LZF-декомпрессия → JSON → метаданные и скриншот |
+| `app/app.go` | HTTP-сервер, маршруты go-app/v10, кеширование, встроенные ресурсы |
+| `app/appList.go` | Веб-UI: список бэкапов, организованных по имени/дате |
+| `app/appDetail.go` | Детальная страница бэкапа, модальное подтверждение восстановления |
+| `app/restore.go` | HTTP-обработчик `/restore/{id}` — восстановление из бэкапа |
+| `app/lockFile_*.go` | Блокировка файлов: Windows (LockFileEx), Unix (flock), WASM (no-op) |
+| `app/systray_*.go` | System tray: полная реализация (не-WASM) / stub (WASM) |
+| `app/statFIle.go` | `//go:embed` — встраивание favicon, CSS, WASM в бинарник |
 
 ### Формат сохранений The Long Dark
 

@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func Copy(srcFile, dstFile string) error {
@@ -45,11 +47,29 @@ func DoRestoreHandler(w http.ResponseWriter, r *http.Request) {
 
 		fFileName := filepath.Base(path)
 
+		// Skip cache files
+		if strings.HasPrefix(fFileName, "info.") {
+			return nil
+		}
+
 		fFrom := filepath.Join(fBackupIDFolder, fFileName)
 		fTo := filepath.Join(DataFolder, fFileName)
 
 		return Copy(fFrom, fTo)
 	})
+
+	// POST → JSON response
+	if r.Method == http.MethodPost {
+		w.Header().Set("Content-Type", "application/json")
+		if err != nil {
+			fmt.Fprintf(w, `{"ok":false,"error":"%s"}`, err.Error())
+		} else {
+			fmt.Fprint(w, `{"ok":true}`)
+		}
+		return
+	}
+
+	// GET → redirect (backward compatible)
 	if err != nil {
 		http.Error(w, "Failed to restore: "+err.Error(), http.StatusInternalServerError)
 		return

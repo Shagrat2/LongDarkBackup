@@ -24,10 +24,18 @@ func StringOnList(val string, list []string) bool {
 	return false
 }
 
-func statFile(Data []byte, MIME string) http.Handler {
+func statFile(Data []byte, MIME string, cache string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", MIME)
+		w.Header().Set("Cache-Control", cache)
 		w.Write(Data)
+	})
+}
+
+func noCache(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		next.ServeHTTP(w, r)
 	})
 }
 
@@ -37,7 +45,7 @@ func appSrv() error {
 	//app.Route("/list/", func() app.Composer { return &ListPage{} })
 	app.RunWhenOnBrowser()
 
-	http.Handle("/", &app.Handler{
+	http.Handle("/", noCache(&app.Handler{
 		Name:        "LG Backup",
 		Description: "Automatic backup service",
 		Styles: []string{
@@ -46,13 +54,13 @@ func appSrv() error {
 		Icon: app.Icon{
 			Default: "/web/favicon.png",
 		},
-		//Scripts:     []string{"/js/main.js"}
-		//Resources: app.LocalDir("/"),
-	})
+	}))
 
-	http.Handle("/web/favicon.png", statFile(cFavIconPNG, "image/png"))
-	http.Handle("/web/style.css", statFile(cStyleCSS, "text/css"))
-	http.Handle("/web/app.wasm", statFile(cAppWASM, "application/wasm"))
+	http.Handle("/web/favicon.png", statFile(cFavIconPNG, "image/png", "max-age=86400"))
+	http.Handle("/web/style.css", statFile(cStyleCSS, "text/css", "no-cache, no-store, must-revalidate"))
+	http.Handle("/web/app.wasm", statFile(cAppWASM, "application/wasm", "no-cache, no-store, must-revalidate"))
+	http.HandleFunc("/img/", ImgHandler)
+	http.HandleFunc("/save/", SaveDetailHandler)
 	http.HandleFunc("/restore/", DoRestoreHandler)
 
 	go func() {

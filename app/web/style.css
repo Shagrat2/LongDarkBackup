@@ -1,0 +1,472 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500&display=swap');
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #0a0e17;
+  color: #c8d6e5;
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-weight: 300;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+a { color: inherit; }
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem 3rem;
+}
+
+/* ── Header ── */
+.header {
+  padding: 1.5rem 0;
+  border-bottom: 1px solid rgba(100, 120, 140, 0.2);
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.8rem;
+  letter-spacing: 3px;
+  color: #c8d6e5;
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+/* ── Hero Card ── */
+.hero {
+  background: rgba(20, 28, 40, 0.85);
+  border: 1px solid rgba(100, 120, 140, 0.3);
+  padding: 1.5rem;
+  margin-bottom: 2.5rem;
+  display: flex;
+  gap: 1.5rem;
+  backdrop-filter: blur(10px);
+}
+
+.hero-img {
+  width: 320px;
+  min-width: 320px;
+  height: 180px;
+  object-fit: cover;
+  border: 1px solid rgba(100, 120, 140, 0.2);
+}
+
+.hero-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.hero-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.4rem;
+  letter-spacing: 2px;
+  color: #c8d6e5;
+  text-transform: uppercase;
+}
+
+.hero-subtitle {
+  color: #5e6e82;
+  font-size: 0.85rem;
+  margin-top: 0.2rem;
+}
+
+.hero-stats { margin-top: 0.5rem; }
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0;
+  font-size: 0.85rem;
+}
+
+.stat-label { color: #5e6e82; }
+
+.stat-value {
+  color: #c8d6e5;
+  font-family: ui-monospace, 'SF Mono', monospace;
+  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hero-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.backup-time {
+  color: #5e6e82;
+  font-size: 0.8rem;
+}
+
+/* ── Condition Bar ── */
+.condition-bar {
+  width: 100px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.condition-fill {
+  height: 100%;
+  transition: width 0.3s;
+}
+
+.cond-good .condition-fill { background: #4a8c5c; }
+.cond-warn .condition-fill { background: #d4a857; }
+.cond-danger .condition-fill { background: #a04040; }
+
+/* ── Buttons ── */
+.btn-restore {
+  display: inline-block;
+  background: #d4a857;
+  color: #0a0e17;
+  padding: 0.5rem 1.5rem;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.btn-restore:hover { background: #e0b86a; }
+
+.btn-cancel {
+  background: transparent;
+  border: 1px solid rgba(100, 120, 140, 0.3);
+  color: #5e6e82;
+  padding: 0.5rem 1.5rem;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.3s, color 0.3s;
+}
+
+.btn-cancel:hover {
+  border-color: #5e6e82;
+  color: #c8d6e5;
+}
+
+/* ── Save Section (accordion by DisplayName) ── */
+.save-section {
+  margin-bottom: 0.5rem;
+}
+
+.save-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid rgba(100, 120, 140, 0.3);
+  cursor: pointer;
+  user-select: none;
+}
+
+.save-header:hover .save-name { color: #c8d6e5; }
+
+.save-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.3rem;
+  letter-spacing: 2px;
+  color: #8a9bb5;
+  text-transform: uppercase;
+  transition: color 0.3s;
+}
+
+.save-name::before {
+  content: '\25B6\00a0';
+  font-size: 0.7em;
+  display: inline-block;
+  transition: transform 0.3s;
+}
+
+.save-section[open] > .save-header .save-name::before {
+  transform: rotate(90deg);
+}
+
+.save-meta {
+  color: #3a4a5e;
+  font-size: 0.8rem;
+}
+
+.save-subtitle {
+  color: #5e6e82;
+  font-size: 0.8rem;
+  margin-left: 1.2rem;
+}
+
+.save-body {
+  padding-top: 0.5rem;
+}
+
+/* ── Date Section (collapsible) ── */
+.date-section {
+  margin-top: 0.5rem;
+}
+
+.date-separator {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid rgba(100, 120, 140, 0.15);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+
+.date-separator::-webkit-details-marker { display: none; }
+.date-separator::marker { display: none; }
+
+.date-text {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: 1px;
+  color: #5e6e82;
+  text-transform: uppercase;
+  transition: color 0.3s;
+}
+
+.date-text::before {
+  content: '\25B6\00a0';
+  font-size: 0.6em;
+  display: inline-block;
+  transition: transform 0.3s;
+}
+
+.date-section[open] > .date-separator .date-text::before {
+  transform: rotate(90deg);
+}
+
+.date-separator:hover .date-text { color: #c8d6e5; }
+
+.date-count {
+  color: #3a4a5e;
+  font-size: 0.8rem;
+}
+
+/* ── Card Grid ── */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+/* ── Card ── */
+.card {
+  background: rgba(20, 28, 40, 0.85);
+  border: 1px solid rgba(100, 120, 140, 0.2);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.3s, transform 0.2s;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.card:hover {
+  border-color: rgba(212, 168, 87, 0.5);
+  transform: scale(1.02);
+}
+
+.card-img {
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+  display: block;
+  border-bottom: 1px solid rgba(100, 120, 140, 0.15);
+}
+
+.card-body { padding: 0.6rem 0.8rem; }
+
+.card-time {
+  font-family: ui-monospace, 'SF Mono', monospace;
+  font-size: 0.75rem;
+  color: #4fa4b8;
+  margin-bottom: 0.2rem;
+}
+
+.card-region {
+  font-size: 0.8rem;
+  color: #c8d6e5;
+  margin-bottom: 0.15rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-survived {
+  font-size: 0.75rem;
+  color: #5e6e82;
+}
+
+.card-condition {
+  margin-top: 0.3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.card .condition-bar { flex: 1; }
+
+.card-condition-text {
+  font-size: 0.7rem;
+  color: #5e6e82;
+  font-family: ui-monospace, 'SF Mono', monospace;
+}
+
+/* ── Detail Page ── */
+.detail-page { padding: 2rem 0; }
+
+.back-link {
+  color: #5e6e82;
+  text-decoration: none;
+  font-size: 0.9rem;
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  transition: color 0.3s;
+}
+
+.back-link:hover { color: #c8d6e5; }
+
+.detail-content {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.detail-img {
+  width: 480px;
+  min-width: 480px;
+  height: 270px;
+  object-fit: cover;
+  border: 1px solid rgba(100, 120, 140, 0.2);
+}
+
+.detail-info { flex: 1; }
+
+.detail-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.6rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #c8d6e5;
+}
+
+.detail-mode {
+  color: #5e6e82;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.detail-stats { margin-bottom: 1.5rem; }
+
+.detail-stat {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid rgba(100, 120, 140, 0.1);
+  font-size: 0.85rem;
+}
+
+.detail-stat-label { color: #5e6e82; }
+
+.detail-stat-value {
+  color: #c8d6e5;
+  font-family: ui-monospace, 'SF Mono', monospace;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.detail-meta {
+  color: #3a4a5e;
+  font-size: 0.8rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.8;
+}
+
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-overlay.hidden { display: none; }
+
+.modal-box {
+  background: #141c28;
+  border: 1px solid rgba(100, 120, 140, 0.3);
+  padding: 2rem;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+}
+
+.modal-box h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.3rem;
+  letter-spacing: 2px;
+  color: #c8d6e5;
+  margin-bottom: 1rem;
+}
+
+.modal-box p {
+  color: #5e6e82;
+  font-size: 0.85rem;
+  margin-bottom: 0.3rem;
+}
+
+.modal-warning { color: #a04040 !important; margin-top: 0.5rem !important; }
+
+.modal-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+/* ── Utilities ── */
+.text-error {
+  color: #a04040;
+  text-align: center;
+  padding: 2rem;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .hero { flex-direction: column; }
+  .hero-img { width: 100%; min-width: auto; height: auto; }
+  .detail-content { flex-direction: column; }
+  .detail-img { width: 100%; min-width: auto; height: auto; }
+  .card-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+}
+
+@media (max-width: 480px) {
+  .card-grid { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+}
