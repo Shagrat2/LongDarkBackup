@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Описание проекта
 
-LongDarkBackup — кроссплатформенное Go-приложение для автоматического резервного копирования сохранений игры "The Long Dark". Работает как фоновый процесс (Windows Service / systray), каждые 5 секунд проверяет изменения в файлах сохранений, создаёт бэкапы и предоставляет веб-интерфейс для просмотра и восстановления.
+LongDarkBackup — кроссплатформенное Go-приложение для автоматического резервного копирования сохранений игры "The Long Dark". Работает как фоновый процесс (Windows Service / systray), каждые 5 секунд проверяет изменения в файлах сохранений, создаёт бэкапы и предоставляет веб-интерфейс (EN/RU) для просмотра и восстановления.
 
 ## Сборка
 
@@ -20,16 +20,15 @@ GOOS=linux GOARCH=amd64 go build -o LongDarkBackup ./app/
 
 # macOS
 GOOS=darwin GOARCH=amd64 go build -o LongDarkBackup ./app/
-
-# WASM (для веб-версии UI)
-GOOS=js GOARCH=wasm go build -o app/web/app.wasm ./app/
 ```
 
 Тесты отсутствуют. Makefile и CI/CD нет — используются VS Code tasks (.vscode/tasks.json).
 
 ## Архитектура
 
-Весь код в пакете `main` в директории `app/`. Платформо-зависимая логика разделена через build-теги в именах файлов (`_win`, `_nix`, `_wasm`). Статические ресурсы в `app/web/`.
+Весь код в пакете `main` в директории `app/`. Платформо-зависимая логика разделена через build-теги в именах файлов (`_win`, `_nix`). Статические ресурсы в `app/web/`.
+
+WASM-сборка не поддерживается — приложение работает только в SSR-режиме через go-app/v10.
 
 ### Основной цикл
 
@@ -40,20 +39,36 @@ GOOS=js GOARCH=wasm go build -o app/web/app.wasm ./app/
 | Файл | Назначение |
 |------|-----------|
 | `app/main.go` | Точка входа, сервис, systray, определение путей к сохранениям |
-| `app/scan.go` | Фоновое сканирование изменений (каждые 5 сек, ожидание до 30 сек) |
+| `app/scan.go` | Фоновое сканирование изменений (каждые 5 сек, ожидание до 30 сек), бэкап только изменённых файлов |
 | `app/fileList.go` | Отслеживание файлов по времени модификации |
-| `app/cache.go` | Парсинг сохранений: LZF-декомпрессия → JSON → метаданные и скриншот |
-| `app/app.go` | HTTP-сервер, маршруты go-app/v10, кеширование, встроенные ресурсы |
-| `app/appList.go` | Веб-UI: список бэкапов, организованных по имени/дате |
-| `app/appDetail.go` | Детальная страница бэкапа, модальное подтверждение восстановления |
+| `app/cache.go` | Парсинг сохранений: LZF-декомпрессия → JSON → метаданные, скриншот, болезни |
+| `app/app.go` | HTTP-сервер, маршруты, middleware (lang, noETag), встроенные ресурсы |
+| `app/appList.go` | Главная страница: список бэкапов по имени/дате (go-app SSR) |
+| `app/appDetail.go` | Детальная страница бэкапа (html/template), восстановление |
 | `app/restore.go` | HTTP-обработчик `/restore/{id}` — восстановление из бэкапа |
-| `app/lockFile_*.go` | Блокировка файлов: Windows (LockFileEx), Unix (flock), WASM (no-op) |
-| `app/systray_*.go` | System tray: полная реализация (не-WASM) / stub (WASM) |
-| `app/statFIle.go` | `//go:embed` — встраивание favicon, CSS, WASM в бинарник |
+| `app/i18n.go` | Мультиязычность: переводы EN/RU, определение языка, функция `T()` |
+| `app/lockFile_win.go` | Блокировка файлов: Windows (LockFileEx) |
+| `app/lockFile_nix.go` | Блокировка файлов: Unix (flock) |
+| `app/systray_other.go` | System tray (systray + open-browser) |
+| `app/statFIle.go` | `//go:embed` — встраивание favicon и CSS в бинарник |
+
+### i18n (мультиязычность)
+
+- `app/i18n.go` — все строки перевода, функция `T(key)`, определение языка из cookie/Accept-Language
+- Язык хранится в глобальной переменной `currentLang` (безопасно для однопользовательского localhost)
+- Переключатель RU/EN на каждой странице, язык сохраняется в cookie (1 год) + localStorage
+- `langMiddleware` в `app/app.go` устанавливает язык до рендеринга
+
+### go-app SSR без WASM
+
+go-app/v10 используется только в SSR-режиме. WASM отключён:
+- `/web/app.wasm` возвращает 404
+- Загрузочный экран go-app скрыт через CSS (`#app-wasm-loader{display:none}`)
+- `noETag` middleware убирает `If-None-Match` для корректного переключения языка
 
 ### Формат сохранений The Long Dark
 
-Файлы `sandbox*` содержат LZF-сжатый JSON с вложенными JSON-строками в `m_Dict["info"]` (статистика) и `m_Dict["screenshot"]` (base64 JPEG).
+Файлы `sandbox*` содержат LZF-сжатый JSON с вложенными JSON-строками в `m_Dict["info"]` (статистика) и `m_Dict["screenshot"]` (base64 JPEG). Глобальные данные (болезни, голод) в `m_Dict["global"]`.
 
 ### Переменные окружения
 
@@ -64,7 +79,7 @@ GOOS=js GOARCH=wasm go build -o app/web/app.wasm ./app/
 
 ### Ключевые зависимости
 
-- `go-app/v10` — PWA-фреймворк (UI компилируется и в нативный сервер, и в WASM)
+- `go-app/v10` — PWA-фреймворк (SSR-режим, без WASM)
 - `kardianos/service` — запуск как Windows Service
 - `getlantern/systray` — иконка в системном трее
 - `zhuyie/golzf` — LZF декомпрессия сохранений

@@ -46,14 +46,14 @@
 | `/img/{id}` | `app/appDetail.go` | JPEG-скриншот бэкапа |
 | `/web/style.css` | `app/statFIle.go` | Стили (embed) |
 | `/web/favicon.png` | `app/statFIle.go` | Иконка (embed) |
-| `/web/app.wasm` | `app/statFIle.go` | WASM-модуль (embed) |
+| `/web/app.wasm` | `app/app.go` | Возвращает 404 (WASM отключён) |
 
 ### Кеширование
 
 | Ресурс | Cache-Control |
 |--------|---------------|
 | HTML-страницы (`/`, `/save/`) | `no-cache, no-store, must-revalidate` |
-| CSS, WASM | `no-cache, no-store, must-revalidate` |
+| CSS | `no-cache, no-store, must-revalidate` |
 | Скриншоты (`/img/`) | `public, max-age=31536000, immutable` |
 | Favicon | `max-age=86400` |
 
@@ -282,10 +282,10 @@ type DetailData struct {
 |---------|----------|
 | `backupTime(path)` | Извлекает `HH:MM` из имени папки бэкапа |
 | `backupDate(path)` | Извлекает `YYYY-MM-DD` из имени папки |
-| `formatDateRu(iso)` | `"2026-02-19"` → `"19 февраля 2026"` |
+| `formatDate(iso)` | `"2026-02-19"` → `"19 февраля 2026"` / `"February 19, 2026"` |
 | `condClass(s)` | `> 60` → `cond-good`, `> 30` → `cond-warn`, иначе `cond-danger` |
 | `condWidth(s)` | Значение → `"52%"` (clamped 0-100) |
-| `pluralBackups(n)` | Русское склонение: "1 бэкап", "2 бэкапа", "5 бэкапов" |
+| `pluralBackups(n)` | Мультиязычное: "1 бэкап"/"1 backup", "2 бэкапа"/"2 backups" |
 
 ---
 
