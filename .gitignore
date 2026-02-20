@@ -3,3 +3,4 @@ __debug_*
 .vscode
 testRestore/
 .DS_Store
+dist/

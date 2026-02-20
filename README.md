@@ -12,34 +12,37 @@ Automatic backup service for **The Long Dark** saves. Runs as a background proce
 - One-click restore from any backup
 - Multilingual interface (English / Russian)
 - Cross-platform: Windows, Linux, macOS
-- Works as Windows Service or standalone with system tray icon
-
-## Screenshot
-
-The web UI displays backups grouped by save name and date, with screenshots and game stats.
+- System tray icon with quick access
 
 ## Installation
 
-Download the latest release from the [releases page](https://github.com/Shagrat2/LongDarkBackup/releases), extract and run `LongDarkBackup` (or `LDBackup-amd64.exe` on Windows).
+Download the latest release from the [releases page](https://github.com/Shagrat2/LongDarkBackup/releases):
+
+| Platform | File | Install |
+|----------|------|---------|
+| Windows x32 | `.zip` | Unzip and run `LongDarkBackup.exe` |
+| Windows x64 | `.zip` | Unzip and run `LongDarkBackup.exe` |
+| macOS Intel | `.dmg` | Open DMG, drag to Applications |
+| macOS Apple Silicon | `.dmg` | Open DMG, drag to Applications |
+| Linux x64 | `.zip` | Unzip and run `./LongDarkBackup` |
+
+> **macOS**: If blocked by Gatekeeper — System Settings → Privacy & Security → Open Anyway.
 
 The program will open the web interface in your browser automatically.
 
-## Build
+## Build from source
 
-Requires Go 1.21+.
+Requires Go 1.23+. Linux build requires Docker (for GTK/systray).
 
 ```bash
 # Current platform
 go build -o LongDarkBackup ./app/
 
-# Windows
-GOOS=windows GOARCH=amd64 go build -o LDBackup-amd64.exe ./app/
+# All platforms release build
+./release.sh v1.0.0
 
-# Linux
-GOOS=linux GOARCH=amd64 go build -o LongDarkBackup ./app/
-
-# macOS
-GOOS=darwin GOARCH=amd64 go build -o LongDarkBackup ./app/
+# Build + create GitHub release
+./release.sh v1.0.0 --publish
 ```
 
 ## Configuration
@@ -63,7 +66,7 @@ Environment variables (optional):
 
 - [go-app/v10](https://github.com/maxence-charriere/go-app) — PWA framework (SSR mode)
 - [kardianos/service](https://github.com/kardianos/service) — Windows Service support
-- [getlantern/systray](https://github.com/nicoh-dev/systray) — System tray icon
+- [getlantern/systray](https://github.com/getlantern/systray) — System tray icon
 - [zhuyie/golzf](https://github.com/zhuyie/golzf) — LZF decompression for save files
 
 ## License

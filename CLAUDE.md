@@ -6,23 +6,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 LongDarkBackup — кроссплатформенное Go-приложение для автоматического резервного копирования сохранений игры "The Long Dark". Работает как фоновый процесс (Windows Service / systray), каждые 5 секунд проверяет изменения в файлах сохранений, создаёт бэкапы и предоставляет веб-интерфейс (EN/RU) для просмотра и восстановления.
 
-## Сборка
+## Сборка и релиз
 
 ```bash
 # Текущая платформа
 go build -o LongDarkBackup ./app/
 
-# Windows
-GOOS=windows GOARCH=amd64 go build -o LDBackup-amd64.exe ./app/
+# Релиз всех платформ (Windows zip, macOS dmg, Linux zip)
+./release.sh v1.0.0
 
-# Linux
-GOOS=linux GOARCH=amd64 go build -o LongDarkBackup ./app/
-
-# macOS
-GOOS=darwin GOARCH=amd64 go build -o LongDarkBackup ./app/
+# Релиз + публикация на GitHub
+./release.sh v1.0.0 --publish
 ```
 
-Тесты отсутствуют. Makefile и CI/CD нет — используются VS Code tasks (.vscode/tasks.json).
+Linux собирается через Docker (`Dockerfile.linux`) — требуется для GTK/systray.
+macOS собирается как .app бандл внутри .dmg с ad-hoc подписью.
+Тесты отсутствуют. VS Code tasks в `.vscode/tasks.json`: build, release, release + publish.
 
 ## Архитектура
 
@@ -49,8 +48,18 @@ WASM-сборка не поддерживается — приложение р�
 | `app/i18n.go` | Мультиязычность: переводы EN/RU, определение языка, функция `T()` |
 | `app/lockFile_win.go` | Блокировка файлов: Windows (LockFileEx) |
 | `app/lockFile_nix.go` | Блокировка файлов: Unix (flock) |
-| `app/systray_other.go` | System tray (systray + open-browser) |
+| `app/systray_other.go` | System tray: darwin + windows (CGO, getlantern/systray) |
+| `app/systray_linux.go` | System tray: linux (CGO, getlantern/systray через Docker) |
 | `app/statFIle.go` | `//go:embed` — встраивание favicon и CSS в бинарник |
+
+### Релизная сборка
+
+| Файл | Назначение |
+|------|-----------|
+| `release.sh` | Сборка всех платформ + публикация GitHub release |
+| `Dockerfile.linux` | Docker-образ для сборки Linux (golang + GTK + ayatana-appindicator) |
+| `pkg/macos/Info.plist` | .app бандл: CFBundle, LSUIElement=true (без Dock-иконки) |
+| `pkg/macos/icon.icns` | Иконка macOS .app |
 
 ### i18n (мультиязычность)
 
@@ -81,5 +90,5 @@ go-app/v10 используется только в SSR-режиме. WASM от�
 
 - `go-app/v10` — PWA-фреймворк (SSR-режим, без WASM)
 - `kardianos/service` — запуск как Windows Service
-- `getlantern/systray` — иконка в системном трее
+- `getlantern/systray` — иконка в системном трее (CGO на Linux/macOS)
 - `zhuyie/golzf` — LZF декомпрессия сохранений

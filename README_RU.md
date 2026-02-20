@@ -12,30 +12,37 @@
 - Восстановление из любого бэкапа одной кнопкой
 - Мультиязычный интерфейс (русский / английский)
 - Кроссплатформенность: Windows, Linux, macOS
-- Работает как Windows Service или автономно с иконкой в системном трее
+- Иконка в системном трее с быстрым доступом
 
 ## Установка
 
-Скачайте последний релиз со [страницы релизов](https://github.com/Shagrat2/LongDarkBackup/releases), распакуйте и запустите `LongDarkBackup` (или `LDBackup-amd64.exe` на Windows).
+Скачайте последний релиз со [страницы релизов](https://github.com/Shagrat2/LongDarkBackup/releases):
+
+| Платформа | Файл | Установка |
+|-----------|------|-----------|
+| Windows x32 | `.zip` | Распаковать, запустить `LongDarkBackup.exe` |
+| Windows x64 | `.zip` | Распаковать, запустить `LongDarkBackup.exe` |
+| macOS Intel | `.dmg` | Открыть DMG, перетащить в Программы |
+| macOS Apple Silicon | `.dmg` | Открыть DMG, перетащить в Программы |
+| Linux x64 | `.zip` | Распаковать, запустить `./LongDarkBackup` |
+
+> **macOS**: Если Gatekeeper блокирует — Настройки → Конфиденциальность и безопасность → Всё равно открыть.
 
 Программа автоматически откроет веб-интерфейс в браузере.
 
-## Сборка
+## Сборка из исходников
 
-Требуется Go 1.21+.
+Требуется Go 1.23+. Для сборки Linux нужен Docker (для GTK/systray).
 
 ```bash
 # Текущая платформа
 go build -o LongDarkBackup ./app/
 
-# Windows
-GOOS=windows GOARCH=amd64 go build -o LDBackup-amd64.exe ./app/
+# Релиз всех платформ
+./release.sh v1.0.0
 
-# Linux
-GOOS=linux GOARCH=amd64 go build -o LongDarkBackup ./app/
-
-# macOS
-GOOS=darwin GOARCH=amd64 go build -o LongDarkBackup ./app/
+# Сборка + публикация GitHub release
+./release.sh v1.0.0 --publish
 ```
 
 ## Настройка
@@ -59,7 +66,7 @@ GOOS=darwin GOARCH=amd64 go build -o LongDarkBackup ./app/
 
 - [go-app/v10](https://github.com/maxence-charriere/go-app) — PWA-фреймворк (SSR-режим)
 - [kardianos/service](https://github.com/kardianos/service) — поддержка Windows Service
-- [getlantern/systray](https://github.com/nicoh-dev/systray) — иконка в системном трее
+- [getlantern/systray](https://github.com/getlantern/systray) — иконка в системном трее
 - [zhuyie/golzf](https://github.com/zhuyie/golzf) — LZF-декомпрессия сохранений
 
 ## Лицензия
