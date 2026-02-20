@@ -8,15 +8,19 @@ import (
 
 type DetailData struct {
 	Info          cacheItem
+	Global        GlobalData
 	BackupDateFmt string
 	BackupTimeFmt string
 	CondClass     string
 	CondWidth     string
 	ID            string
+	Lang          string
 }
 
-var detailTmpl = template.Must(template.New("detail").Parse(`<!DOCTYPE html>
-<html lang="ru">
+var detailTmpl = template.Must(template.New("detail").Funcs(template.FuncMap{
+	"T": T,
+}).Parse(`<!DOCTYPE html>
+<html lang="{{.Lang}}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -27,7 +31,14 @@ var detailTmpl = template.Must(template.New("detail").Parse(`<!DOCTYPE html>
 <body>
 <div class="container">
   <div class="detail-page">
-    <a href="/" class="back-link">&#8592; НАЗАД</a>
+    <div class="detail-top">
+      <a href="#" class="back-link" onclick="history.back();return false">&#8592; {{T "back"}}</a>
+      <div class="lang-switch">
+        <a class="lang-link{{if eq .Lang "ru"}} active{{end}}" href="/set-lang?lang=ru" onclick="localStorage.setItem('lang','ru')">RU</a>
+        <span class="lang-sep">/</span>
+        <a class="lang-link{{if eq .Lang "en"}} active{{end}}" href="/set-lang?lang=en" onclick="localStorage.setItem('lang','en')">EN</a>
+      </div>
+    </div>
 
     <div class="detail-content">
       <img class="detail-img" src="/img/{{.ID}}" alt="Screenshot">
@@ -37,32 +48,53 @@ var detailTmpl = template.Must(template.New("detail").Parse(`<!DOCTYPE html>
 
         <div class="detail-stats">
           <div class="detail-stat">
-            <span class="detail-stat-label">Выживание</span>
+            <span class="detail-stat-label">{{T "survival"}}</span>
             <span class="detail-stat-value">{{.Info.HoursSurvived}}</span>
           </div>
           <div class="detail-stat">
-            <span class="detail-stat-label">Состояние</span>
+            <span class="detail-stat-label">{{T "condition"}}</span>
             <span class="detail-stat-value">
               {{.Info.Condition}}%
               <span class="condition-bar {{.CondClass}}"><span class="condition-fill" style="width:{{.CondWidth}}"></span></span>
             </span>
           </div>
+          {{if .Global.Hunger}}<div class="detail-stat">
+            <span class="detail-stat-label">{{T "hunger"}}</span>
+            <span class="detail-stat-value">{{.Global.Hunger}}</span>
+          </div>{{end}}
+          {{if .Global.Thirst}}<div class="detail-stat">
+            <span class="detail-stat-label">{{T "thirst"}}</span>
+            <span class="detail-stat-value">{{.Global.Thirst}}</span>
+          </div>{{end}}
+          {{if .Global.Fatigue}}<div class="detail-stat">
+            <span class="detail-stat-label">{{T "fatigue"}}</span>
+            <span class="detail-stat-value">{{.Global.Fatigue}}</span>
+          </div>{{end}}
+          {{if .Global.Freezing}}<div class="detail-stat">
+            <span class="detail-stat-label">{{T "freezing"}}</span>
+            <span class="detail-stat-value">{{.Global.Freezing}}</span>
+          </div>{{end}}
           <div class="detail-stat">
-            <span class="detail-stat-label">Мир исследован</span>
+            <span class="detail-stat-label">{{T "world_explored"}}</span>
             <span class="detail-stat-value">{{.Info.WorldExplored}}%</span>
           </div>
           <div class="detail-stat">
-            <span class="detail-stat-label">Персонаж</span>
+            <span class="detail-stat-label">{{T "character"}}</span>
             <span class="detail-stat-value">{{.Info.Persona}}</span>
           </div>
         </div>
+        {{if .Global.Afflictions}}
+        <div class="detail-afflictions">
+          {{range .Global.Afflictions}}<span class="affliction-tag">{{.}}</span>{{end}}
+        </div>
+        {{end}}
 
         <div class="detail-meta">
-          Бэкап: {{.BackupDateFmt}}, {{.BackupTimeFmt}}<br>
-          Сохранение: {{.Info.DisplayName}} &middot; {{.Info.Timestamp}}
+          {{T "backup_label"}}: {{.BackupDateFmt}}, {{.BackupTimeFmt}}<br>
+          {{T "save_label"}}: {{.Info.DisplayName}} &middot; {{.Info.Timestamp}}
         </div>
 
-        <button class="btn-restore" onclick="showModal()">&#8635; ВОССТАНОВИТЬ</button>
+        <button class="btn-restore" onclick="showModal()">&#8635; {{T "restore"}}</button>
       </div>
     </div>
   </div>
@@ -70,13 +102,13 @@ var detailTmpl = template.Must(template.New("detail").Parse(`<!DOCTYPE html>
 
 <div id="modal" class="modal-overlay hidden">
   <div class="modal-box">
-    <h2>ВОССТАНОВИТЬ СОХРАНЕНИЕ?</h2>
+    <h2>{{T "restore_confirm"}}</h2>
     <p>{{.Info.Region}} &middot; {{.Info.HoursSurvived}}</p>
-    <p>Бэкап от {{.BackupTimeFmt}}</p>
-    <p class="modal-warning">Текущее сохранение будет перезаписано.</p>
+    <p>{{T "backup_from"}} {{.BackupTimeFmt}}</p>
+    <p class="modal-warning">{{T "overwrite_warn"}}</p>
     <div class="modal-buttons">
-      <button class="btn-cancel" onclick="hideModal()">ОТМЕНА</button>
-      <button class="btn-restore" onclick="doRestore()">ВОССТАНОВИТЬ</button>
+      <button class="btn-cancel" onclick="hideModal()">{{T "cancel"}}</button>
+      <button class="btn-restore" onclick="doRestore()">{{T "restore"}}</button>
     </div>
   </div>
 </div>
@@ -129,11 +161,13 @@ func SaveDetailHandler(w http.ResponseWriter, r *http.Request) {
 
 	data := DetailData{
 		Info:          info,
-		BackupDateFmt: formatDateRu(bDate),
+		Global:        loadGlobalData(id),
+		BackupDateFmt: formatDate(bDate),
 		BackupTimeFmt: bTime,
 		CondClass:     condClass(info.Condition),
 		CondWidth:     condWidth(info.Condition),
 		ID:            id,
+		Lang:          string(GetLang()),
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

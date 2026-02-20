@@ -219,3 +219,282 @@ func loadData(id string) (data cacheItem, img []byte, err error) {
 
 	return
 }
+
+// decodeDictEntry decodes a base64+LZF entry from m_Dict into JSON map.
+func decodeDictEntry(encoded string) (map[string]interface{}, error) {
+	b, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return nil, err
+	}
+	buf := make([]byte, len(b)*10)
+	n, err := lzf.Decompress(b, buf)
+	if err != nil {
+		return nil, err
+	}
+	var m map[string]interface{}
+	err = json.Unmarshal(buf[:n], &m)
+	return m, err
+}
+
+// deserialize parses a JSON string value from a map into a map.
+func deserialize(m map[string]interface{}, key string) map[string]interface{} {
+	s, _ := m[key].(string)
+	if s == "" || s == "{}" || s == "[]" {
+		return nil
+	}
+	var out map[string]interface{}
+	if json.Unmarshal([]byte(s), &out) != nil {
+		return nil
+	}
+	return out
+}
+
+// hasLocations checks if a deserialized affliction has non-empty m_Locations array.
+func hasLocations(m map[string]interface{}) bool {
+	if m == nil {
+		return false
+	}
+	locs, _ := m["m_Locations"].([]interface{})
+	return len(locs) > 0
+}
+
+type GlobalData struct {
+	Hunger      string
+	Thirst      string
+	Fatigue     string
+	Freezing    string
+	Afflictions []string
+}
+
+func loadGlobalData(id string) (gd GlobalData) {
+	fDir := filepath.Join(BackupFolder, id)
+
+	// Find sandbox file
+	var sandboxFile string
+	filepath.WalkDir(fDir, func(path string, d os.DirEntry, err error) error {
+		if d != nil && !d.IsDir() && strings.HasPrefix(d.Name(), "sandbox") {
+			sandboxFile = path
+			return filepath.SkipAll
+		}
+		return nil
+	})
+	if sandboxFile == "" {
+		return
+	}
+
+	raw, err := os.ReadFile(sandboxFile)
+	if err != nil {
+		return
+	}
+	buf := make([]byte, len(raw)*10)
+	n, err := lzf.Decompress(raw, buf)
+	if err != nil {
+		return
+	}
+
+	var top map[string]interface{}
+	if json.Unmarshal(buf[:n], &top) != nil {
+		return
+	}
+	mDict, _ := top["m_Dict"].(map[string]interface{})
+	if mDict == nil {
+		return
+	}
+
+	globalEncoded, _ := mDict["global"].(string)
+	if globalEncoded == "" {
+		return
+	}
+	global, err := decodeDictEntry(globalEncoded)
+	if err != nil {
+		return
+	}
+
+	// ── Basic stats ──
+	if m := deserialize(global, "m_Hunger_Serialized"); m != nil {
+		v, _ := m["m_NumHoursStarving"].(float64)
+		if v > 0 {
+			gd.Hunger = fmt.Sprintf("%.1f %s", v, T(MsgStarvingHours))
+		} else {
+			gd.Hunger = T(MsgFed)
+		}
+	}
+
+	if m := deserialize(global, "m_Thirst_Serialized"); m != nil {
+		v, _ := m["m_CurrentThirstProxy"].(float64)
+		gd.Thirst = fmt.Sprintf("%.0f%%", v)
+	}
+
+	if m := deserialize(global, "m_Fatigue_Serialized"); m != nil {
+		v, _ := m["m_CurrentFatigueProxy"].(float64)
+		gd.Fatigue = fmt.Sprintf("%.0f%%", v)
+	}
+
+	if m := deserialize(global, "m_Freezing_Serialized"); m != nil {
+		v, _ := m["m_CurrentFreezingProxy"].(float64)
+		gd.Freezing = fmt.Sprintf("%.0f%%", v)
+	}
+
+	// ── Afflictions ──
+
+	// Blood loss
+	if hasLocations(deserialize(global, "m_BloodLossSerialized")) {
+		gd.Afflictions = append(gd.Afflictions, T(MsgBloodLoss))
+	}
+
+	// Broken ribs
+	if hasLocations(deserialize(global, "m_BrokenRibSerialized")) {
+		gd.Afflictions = append(gd.Afflictions, T(MsgBrokenRibs))
+	}
+
+	// Burns
+	if m := deserialize(global, "m_BurnsSerialized"); m != nil {
+		gd.Afflictions = append(gd.Afflictions, T(MsgBurns))
+	}
+
+	// Electric burns
+	if m := deserialize(global, "m_BurnsElectricSerialized"); m != nil {
+		gd.Afflictions = append(gd.Afflictions, T(MsgElectricBurns))
+	}
+
+	// Frostbite
+	if m := deserialize(global, "m_FrostbiteSerialized"); m != nil {
+		locs, _ := m["m_LocationsWithActiveFrostbite"].([]interface{})
+		if len(locs) > 0 {
+			gd.Afflictions = append(gd.Afflictions, T(MsgFrostbite))
+		}
+	}
+
+	// Sprained ankle
+	if hasLocations(deserialize(global, "m_SprainedAnkleSerialized")) {
+		gd.Afflictions = append(gd.Afflictions, T(MsgSprainedAnkle))
+	}
+
+	// Sprained wrist
+	if hasLocations(deserialize(global, "m_SprainedWristSerialized")) {
+		gd.Afflictions = append(gd.Afflictions, T(MsgSprainedWrist))
+	}
+
+	// Sprain pain
+	if m := deserialize(global, "m_SprainPainSerialized"); m != nil {
+		locs, _ := m["m_Locations"].([]interface{})
+		if len(locs) > 0 {
+			gd.Afflictions = append(gd.Afflictions, T(MsgSprainPain))
+		}
+	}
+
+	// Food poisoning
+	if m := deserialize(global, "m_FoodPoisoningSerialized"); m != nil {
+		cause, _ := m["m_CauseLocID"].(string)
+		if cause != "" {
+			gd.Afflictions = append(gd.Afflictions, T(MsgFoodPoisoning))
+		}
+	}
+
+	// Dysentery
+	if m := deserialize(global, "m_DysenterySerialized"); m != nil {
+		if _, ok := m["m_DurationHours"]; ok {
+			gd.Afflictions = append(gd.Afflictions, T(MsgDysentery))
+		}
+	}
+
+	// Infection risk
+	if hasLocations(deserialize(global, "m_InfectionRiskSerialized")) {
+		gd.Afflictions = append(gd.Afflictions, T(MsgInfectionRisk))
+	}
+
+	// Infection
+	if hasLocations(deserialize(global, "m_InfectionSerialized")) {
+		gd.Afflictions = append(gd.Afflictions, T(MsgInfection))
+	}
+
+	// Hypothermia
+	if m := deserialize(global, "m_HypothermiaSerialized"); m != nil {
+		gd.Afflictions = append(gd.Afflictions, T(MsgHypothermia))
+	}
+
+	// Intestinal parasites
+	if m := deserialize(global, "m_IntestinalParasitesSerialized"); m != nil {
+		if hasP, _ := m["m_HasParasites"].(bool); hasP {
+			gd.Afflictions = append(gd.Afflictions, T(MsgIntestinalPar))
+		}
+	}
+
+	// Scurvy
+	if m, _ := global["m_ScurvySerialized"].(map[string]interface{}); m != nil {
+		enabled, _ := m["m_Enabled"].(bool)
+		repaired, _ := m["m_Repaired"].(bool)
+		if enabled && !repaired {
+			gd.Afflictions = append(gd.Afflictions, T(MsgScurvy))
+		}
+	}
+
+	// Headache
+	if m := deserialize(global, "m_HeadacheSerialized"); m != nil {
+		list, _ := m["m_ListOfParamData"].([]interface{})
+		if len(list) > 0 {
+			gd.Afflictions = append(gd.Afflictions, T(MsgHeadache))
+		}
+	}
+
+	// Insomnia
+	if m := deserialize(global, "m_InsomniaSerialized"); m != nil {
+		list, _ := m["m_ListOfParamData"].([]interface{})
+		if len(list) > 0 {
+			gd.Afflictions = append(gd.Afflictions, T(MsgInsomnia))
+		}
+	}
+
+	// Severe laceration
+	if m, _ := global["m_SevereLacerationSerialized"].(map[string]interface{}); len(m) > 0 {
+		gd.Afflictions = append(gd.Afflictions, T(MsgSevereLac))
+	}
+
+	// Suffocating
+	if m := deserialize(global, "m_SuffocatingSerialized"); m != nil {
+		gd.Afflictions = append(gd.Afflictions, T(MsgSuffocating))
+	}
+
+	// Misery mode afflictions (permanent debuffs)
+	if m, _ := global["m_MiseryManagerSerialized"].(map[string]interface{}); m != nil {
+		curStage, _ := m["m_CurrentStage"].(float64)
+		stages, _ := m["m_MiseryStages"].([]interface{})
+		for i, st := range stages {
+			if i >= int(curStage) {
+				break
+			}
+			stMap, _ := st.(map[string]interface{})
+			if stMap == nil {
+				continue
+			}
+			affs, _ := stMap["m_Afflictions"].([]interface{})
+			for _, a := range affs {
+				name, _ := a.(string)
+				if tr := miseryAfflictionName(name); tr != "" {
+					gd.Afflictions = append(gd.Afflictions, tr)
+				}
+			}
+		}
+	}
+
+	return
+}
+
+var miseryKeys = map[string]string{
+	"WeakConstitution": MsgWeakConst,
+	"WeakJoints":       MsgWeakJoints,
+	"SourStomach":      MsgSourStomach,
+	"PoorCirculation":  MsgPoorCirc,
+	"UnsettledSleep":   MsgUnsettledSleep,
+	"BrokenBody":       MsgBrokenBody,
+}
+
+func miseryAfflictionName(key string) string {
+	if msgKey, ok := miseryKeys[key]; ok {
+		return T(msgKey)
+	}
+	if key != "" {
+		return key
+	}
+	return ""
+}

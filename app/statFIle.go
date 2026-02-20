@@ -9,6 +9,3 @@ var cFavIconPNG []byte
 
 //go:embed web/style.css
 var cStyleCSS []byte
-
-//go:embed web/app.wasm
-var cAppWASM []byte

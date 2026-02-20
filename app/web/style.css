@@ -28,6 +28,9 @@ a { color: inherit; }
   padding: 1.5rem 0;
   border-bottom: 1px solid rgba(100, 120, 140, 0.2);
   margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .header h1 {
@@ -37,6 +40,45 @@ a { color: inherit; }
   color: #c8d6e5;
   font-weight: 400;
   text-transform: uppercase;
+}
+
+/* ── Language Switcher ── */
+.lang-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.lang-link {
+  color: #3a4a5e;
+  text-decoration: none;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  transition: color 0.3s;
+}
+
+.lang-link:hover { color: #c8d6e5; }
+
+.lang-link.active {
+  color: #c8d6e5;
+  font-weight: 500;
+}
+
+.lang-sep {
+  color: #3a4a5e;
+  font-size: 0.8rem;
+}
+
+/* ── Detail Top Bar ── */
+.detail-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.detail-top .back-link {
+  margin-bottom: 0;
 }
 
 /* ── Hero Card ── */
@@ -397,6 +439,22 @@ a { color: inherit; }
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.detail-afflictions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.affliction-tag {
+  background: rgba(160, 64, 64, 0.2);
+  border: 1px solid rgba(160, 64, 64, 0.4);
+  color: #c87070;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  white-space: nowrap;
 }
 
 .detail-meta {

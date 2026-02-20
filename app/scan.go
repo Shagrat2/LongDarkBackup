@@ -113,7 +113,7 @@ func DoScan() {
 		try++
 	}
 
-	// Backup all files from data folder
+	// Update LastTree to current state
 	allFiles, err := NewListScan(DataFolder)
 	if err != nil {
 		log.Println(err)
@@ -121,12 +121,13 @@ func DoScan() {
 	}
 	LastTree = allFiles
 
+	// Backup only changed files
 	fFolderName := time.Now().Format("2006-01-02-15-04-05")
 	fToFolder := filepath.Join(BackupFolder, fFolderName)
 	os.MkdirAll(fToFolder, 0755)
 
 	log.Println("######")
-	for _, itm := range allFiles {
+	for _, itm := range fFoundFiles {
 		destFile := filepath.Join(fToFolder, filepath.Base(itm.Path))
 		copyFileContents(itm.Path, destFile)
 
