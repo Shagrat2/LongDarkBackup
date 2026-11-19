@@ -87,6 +87,7 @@ func DoScan() {
 	}
 
 	// Wait finish change
+	var stableList TFileList
 	try := 0
 	for {
 		if try >= 30 {
@@ -105,7 +106,7 @@ func DoScan() {
 		// get changed
 		fChFiles := tmpList.GetChanged(LastTree)
 		if fFoundFiles.Equal(fChFiles) {
-			LastTree = tmpList
+			stableList = tmpList
 			break
 		}
 
@@ -113,28 +114,46 @@ func DoScan() {
 		try++
 	}
 
-	// Update LastTree to current state
-	allFiles, err := NewListScan(DataFolder)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	LastTree = allFiles
-
 	// Backup only changed files
 	fFolderName := time.Now().Format("2006-01-02-15-04-05")
-	fToFolder := filepath.Join(BackupFolder, fFolderName)
-	os.MkdirAll(fToFolder, 0755)
+	fToFolder := filepath.Join(GetBackupFolder(), fFolderName)
+	if err := os.MkdirAll(fToFolder, 0755); err != nil {
+		log.Println("Cannot create backup folder:", err)
+		return
+	}
 
 	log.Println("######")
+	failed := make(map[string]bool)
 	for _, itm := range fFoundFiles {
 		destFile := filepath.Join(fToFolder, filepath.Base(itm.Path))
-		copyFileContents(itm.Path, destFile)
+		if err := copyFileContents(itm.Path, destFile); err != nil {
+			log.Println("Backup error:", err)
+			os.Remove(destFile)
+			failed[itm.Path] = true
+			continue
+		}
 
 		log.Println("### " + itm.Path)
 	}
 
-	//! Save file list
+	if len(failed) > 0 {
+		// Keep the successful files and retry only the failed ones next scan
+		processed := make(TFileList, 0, len(stableList))
+		for _, itm := range stableList {
+			if !failed[itm.Path] {
+				processed = append(processed, itm)
+			}
+		}
+		LastTree = processed
+
+		if len(failed) == len(fFoundFiles) {
+			os.Remove(fToFolder)
+		}
+		return
+	}
+
+	// Mark changes as processed only after a complete backup
+	LastTree = stableList
 }
 
 func DoGarbage() {

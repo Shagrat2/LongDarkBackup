@@ -1,7 +1,6 @@
 package main
 
 import (
-	"html/template"
 	"net/http"
 	"path/filepath"
 )
@@ -14,13 +13,10 @@ type DetailData struct {
 	CondClass     string
 	CondWidth     string
 	ID            string
-	Lang          string
 }
 
-var detailTmpl = template.Must(template.New("detail").Funcs(template.FuncMap{
-	"T": T,
-}).Parse(`<!DOCTYPE html>
-<html lang="{{.Lang}}">
+var detailTmpl = newPageTemplate("detail", `<!DOCTYPE html>
+<html lang="{{Lang}}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -33,11 +29,7 @@ var detailTmpl = template.Must(template.New("detail").Funcs(template.FuncMap{
   <div class="detail-page">
     <div class="detail-top">
       <a href="#" class="back-link" onclick="history.back();return false">&#8592; {{T "back"}}</a>
-      <div class="lang-switch">
-        <a class="lang-link{{if eq .Lang "ru"}} active{{end}}" href="/set-lang?lang=ru" onclick="localStorage.setItem('lang','ru')">RU</a>
-        <span class="lang-sep">/</span>
-        <a class="lang-link{{if eq .Lang "en"}} active{{end}}" href="/set-lang?lang=en" onclick="localStorage.setItem('lang','en')">EN</a>
-      </div>
+      {{template "lang_switch" .}}
     </div>
 
     <div class="detail-content">
@@ -128,7 +120,7 @@ function doRestore(){
 document.addEventListener('keydown',function(e){if(e.key==='Escape')hideModal()})
 </script>
 </body>
-</html>`))
+</html>`)
 
 func ImgHandler(w http.ResponseWriter, r *http.Request) {
 	id := filepath.Base(r.URL.Path)
@@ -147,7 +139,7 @@ func ImgHandler(w http.ResponseWriter, r *http.Request) {
 func SaveDetailHandler(w http.ResponseWriter, r *http.Request) {
 	id := filepath.Base(r.URL.Path)
 
-	info, _, err := loadData(id)
+	info, err := loadInfo(id)
 	if err != nil {
 		http.Error(w, "Save not found", http.StatusNotFound)
 		return
@@ -167,10 +159,7 @@ func SaveDetailHandler(w http.ResponseWriter, r *http.Request) {
 		CondClass:     condClass(info.Condition),
 		CondWidth:     condWidth(info.Condition),
 		ID:            id,
-		Lang:          string(GetLang()),
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-	detailTmpl.Execute(w, data)
+	renderHTML(w, detailTmpl, data)
 }

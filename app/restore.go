@@ -1,44 +1,71 @@
 package main
 
 import (
-	"fmt"
+	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
+type restoreResult struct {
+	OK    bool   `json:"ok"`
+	Error string `json:"error,omitempty"`
+}
+
+// Copy replaces dstFile atomically so a failed restore never corrupts the destination.
 func Copy(srcFile, dstFile string) error {
-	out, err := os.Create(dstFile)
-	if err != nil {
-		return err
-	}
-
-	defer out.Close()
-
 	in, err := os.Open(srcFile)
 	if err != nil {
 		return err
 	}
-
 	defer in.Close()
 
-	_, err = io.Copy(out, in)
+	out, err := os.CreateTemp(filepath.Dir(dstFile), filepath.Base(dstFile)+".*.tmp")
 	if err != nil {
 		return err
 	}
+	tmpName := out.Name()
+	defer os.Remove(tmpName)
 
-	return nil
+	if _, err := io.Copy(out, in); err != nil {
+		out.Close()
+		return err
+	}
+	if err := out.Sync(); err != nil {
+		out.Close()
+		return err
+	}
+	if err := out.Close(); err != nil {
+		return err
+	}
+
+	return os.Rename(tmpName, dstFile)
 }
 
 func DoRestoreHandler(w http.ResponseWriter, r *http.Request) {
 
+	// Restore changes save files, so it must be an explicit same-origin POST
+	if r.Method != http.MethodPost {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+
+	if !isSameOrigin(r) {
+		writeRestoreResult(w, http.StatusForbidden, restoreResult{Error: "forbidden"})
+		return
+	}
+
 	ID := filepath.Base(r.URL.Path)
 
-	fBackupIDFolder := filepath.Join(BackupFolder, ID)
+	fBackupIDFolder := filepath.Join(GetBackupFolder(), ID)
 
 	err := filepath.WalkDir(fBackupIDFolder, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
 
 		// Skip dir
 		if d.IsDir() {
@@ -58,22 +85,18 @@ func DoRestoreHandler(w http.ResponseWriter, r *http.Request) {
 		return Copy(fFrom, fTo)
 	})
 
-	// POST → JSON response
-	if r.Method == http.MethodPost {
-		w.Header().Set("Content-Type", "application/json")
-		if err != nil {
-			fmt.Fprintf(w, `{"ok":false,"error":"%s"}`, err.Error())
-		} else {
-			fmt.Fprint(w, `{"ok":true}`)
-		}
-		return
-	}
-
-	// GET → redirect (backward compatible)
 	if err != nil {
-		http.Error(w, "Failed to restore: "+err.Error(), http.StatusInternalServerError)
+		writeRestoreResult(w, http.StatusOK, restoreResult{Error: err.Error()})
 		return
 	}
 
-	http.Redirect(w, r, "/", http.StatusFound)
+	writeRestoreResult(w, http.StatusOK, restoreResult{OK: true})
+}
+
+func writeRestoreResult(w http.ResponseWriter, status int, res restoreResult) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		log.Println("Restore response error:", err)
+	}
 }

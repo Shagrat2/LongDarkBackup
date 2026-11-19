@@ -38,6 +38,8 @@ WASM-сборка не поддерживается — приложение р�
 | Файл | Назначение |
 |------|-----------|
 | `app/main.go` | Точка входа, сервис, systray, определение путей к сохранениям |
+| `app/config.go` | Файл конфигурации (JSON), потокобезопасный доступ к папке бэкапов |
+| `app/settings.go` | Страница `/settings` — изменение папки бэкапов через веб-интерфейс |
 | `app/scan.go` | Фоновое сканирование изменений (каждые 5 сек, ожидание до 30 сек), бэкап только изменённых файлов |
 | `app/fileList.go` | Отслеживание файлов по времени модификации |
 | `app/cache.go` | Парсинг сохранений: LZF-декомпрессия → JSON → метаданные, скриншот, болезни |
@@ -79,10 +81,14 @@ go-app/v10 используется только в SSR-режиме. WASM от�
 
 Файлы `sandbox*` содержат LZF-сжатый JSON с вложенными JSON-строками в `m_Dict["info"]` (статистика) и `m_Dict["screenshot"]` (base64 JPEG). Глобальные данные (болезни, голод) в `m_Dict["global"]`.
 
-### Переменные окружения
+### Настройки и переменные окружения
+
+Приоритет: файл конфигурации → переменные окружения → платформенные значения по умолчанию (`ResolveFolder` в `app/config.go`).
 
 - `LDB_DATA_DIR` — переопределяет путь к сохранениям игры
 - `LDB_BACKUP_DIR` — переопределяет путь к резервным копиям
+
+Файл конфигурации (`app/config.go`): `os.UserConfigDir()/LongDarkBackup/config.json` (Windows `%AppData%`, Linux `~/.config`, macOS `~/Library/Application Support`). Поля: `data_dir`, `backup_dir`. Папка бэкапов настраивается через веб-страницу `/settings` (`app/settings.go`), путь сохраняется в конфиг и применяется без перезапуска (`SetBackupFolder`/`GetBackupFolder` под мьютексом).
 
 Стандартные пути: Windows — `%APPDATA%/Hinterland/TheLongDark/Survival`, Linux/macOS — `~/.local/share/Hinterland/TheLongDark/Survival`. Бэкапы: `~/Documents/LongDarkBackup`.
 

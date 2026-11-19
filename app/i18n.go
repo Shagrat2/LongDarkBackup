@@ -61,6 +61,18 @@ const (
 	MsgPoorCirc       = "poor_circulation"
 	MsgUnsettledSleep = "unsettled_sleep"
 	MsgBrokenBody     = "broken_body"
+	MsgSettings       = "settings"
+	MsgBackupDir      = "backup_dir"
+	MsgBackupDirHint  = "backup_dir_hint"
+	MsgSave           = "save"
+	MsgSettingsSaved  = "settings_saved"
+	MsgPathRequired   = "path_required"
+	MsgPathRelative   = "path_relative"
+	MsgPathRoot       = "path_root"
+	MsgDirCreateErr   = "dir_create_error"
+	MsgDirNotWritable = "dir_not_writable"
+	MsgConfigReadErr  = "config_read_error"
+	MsgConfigSaveErr  = "config_save_error"
 )
 
 var translations = map[Lang]map[string]string{
@@ -110,6 +122,18 @@ var translations = map[Lang]map[string]string{
 		MsgPoorCirc:       "Плохое кровообращение",
 		MsgUnsettledSleep: "Беспокойный сон",
 		MsgBrokenBody:     "Измождённое тело",
+		MsgSettings:       "НАСТРОЙКИ",
+		MsgBackupDir:      "Папка для бэкапов",
+		MsgBackupDirHint:  "Абсолютный путь к папке, где хранятся резервные копии. Например: /Volumes/Disk/LongDarkBackup",
+		MsgSave:           "СОХРАНИТЬ",
+		MsgSettingsSaved:  "Настройки сохранены",
+		MsgPathRequired:   "Укажите путь к папке",
+		MsgPathRelative:   "Путь должен быть абсолютным",
+		MsgPathRoot:       "Нельзя использовать корень диска",
+		MsgDirCreateErr:   "Не удалось создать папку",
+		MsgDirNotWritable: "Нет прав на запись в папку",
+		MsgConfigReadErr:  "Не удалось прочитать конфигурацию",
+		MsgConfigSaveErr:  "Не удалось сохранить настройки",
 	},
 	LangEN: {
 		MsgAppTitle:       "LONGDARK BACKUP",
@@ -157,6 +181,18 @@ var translations = map[Lang]map[string]string{
 		MsgPoorCirc:       "Poor circulation",
 		MsgUnsettledSleep: "Unsettled sleep",
 		MsgBrokenBody:     "Broken body",
+		MsgSettings:       "SETTINGS",
+		MsgBackupDir:      "Backup folder",
+		MsgBackupDirHint:  "Absolute path to the folder where backups are stored. For example: /Volumes/Disk/LongDarkBackup",
+		MsgSave:           "SAVE",
+		MsgSettingsSaved:  "Settings saved",
+		MsgPathRequired:   "Folder path is required",
+		MsgPathRelative:   "Path must be absolute",
+		MsgPathRoot:       "Disk root cannot be used",
+		MsgDirCreateErr:   "Cannot create folder",
+		MsgDirNotWritable: "Folder is not writable",
+		MsgConfigReadErr:  "Cannot read settings",
+		MsgConfigSaveErr:  "Cannot save settings",
 	},
 }
 

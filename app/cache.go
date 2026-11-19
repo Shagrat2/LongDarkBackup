@@ -33,12 +33,23 @@ type cacheItem struct {
 // 	return time.Unix(0, 0).UTC().Add(time.Duration(t)).Format(format)
 // }
 
-func loadData(id string) (data cacheItem, img []byte, err error) {
+// loadData reads save metadata together with the screenshot.
+func loadData(id string) (cacheItem, []byte, error) {
+	return load(id, true)
+}
+
+// loadInfo reads save metadata without loading the screenshot.
+func loadInfo(id string) (cacheItem, error) {
+	data, _, err := load(id, false)
+	return data, err
+}
+
+func load(id string, withImage bool) (data cacheItem, img []byte, err error) {
 
 	// Find get filename
 	fFileName := ""
 
-	fDir := filepath.Join(BackupFolder, id)
+	fDir := filepath.Join(GetBackupFolder(), id)
 
 	// Get cached info
 	fInfoFile := filepath.Join(fDir, "info.json")
@@ -59,7 +70,9 @@ func loadData(id string) (data cacheItem, img []byte, err error) {
 		}
 
 		// Load image
-		img, err = os.ReadFile(fJpegFile)
+		if withImage {
+			img, err = os.ReadFile(fJpegFile)
+		}
 		return
 	}
 
@@ -267,7 +280,7 @@ type GlobalData struct {
 }
 
 func loadGlobalData(id string) (gd GlobalData) {
-	fDir := filepath.Join(BackupFolder, id)
+	fDir := filepath.Join(GetBackupFolder(), id)
 
 	// Find sandbox file
 	var sandboxFile string

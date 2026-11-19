@@ -109,6 +109,10 @@ func appSrv() error {
 	http.HandleFunc("/img/", ImgHandler)
 	http.Handle("/save/", langMiddleware(http.HandlerFunc(SaveDetailHandler)))
 	http.HandleFunc("/restore/", DoRestoreHandler)
+	http.Handle("/settings", langMiddleware(http.HandlerFunc(SettingsHandler)))
+	http.HandleFunc("/settings/", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/settings", http.StatusFound)
+	})
 	http.HandleFunc("/set-lang", setLangHandler)
 
 	go func() {

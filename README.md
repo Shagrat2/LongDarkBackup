@@ -47,7 +47,23 @@ go build -o LongDarkBackup ./app/
 
 ## Configuration
 
-Environment variables (optional):
+The backup folder can be changed in the web interface: **⚙ → Settings**. The value is stored in a config file:
+
+| Platform | Path |
+|----------|------|
+| Windows | `%AppData%/LongDarkBackup/config.json` |
+| Linux | `~/.config/LongDarkBackup/config.json` |
+| macOS | `~/Library/Application Support/LongDarkBackup/config.json` |
+
+```json
+{
+  "backup_dir": "/Volumes/Disk/LongDarkBackup"
+}
+```
+
+The folder is created automatically if it does not exist. For example, you can point it to an external drive: `/Volumes/Disk/LongDarkBackup`.
+
+The config file takes priority over environment variables. Environment variables are used only when the path is not set in the config file (convenient for the first run):
 
 | Variable | Description | Default |
 |----------|-------------|---------|

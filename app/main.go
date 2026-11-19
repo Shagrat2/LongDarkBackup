@@ -27,7 +27,6 @@ var (
 	cHost          = "localhost:45192"
 	FlagStartOnRun = "yes"
 	DataFolder     = ""
-	BackupFolder   = ""
 
 	s service.Service
 )
@@ -41,33 +40,32 @@ func (t *Server) Start(s service.Service) error {
 		log.Println("Running under service manager.")
 	}
 
-	// Set default
-	DataFolder = os.Getenv("LDB_DATA_DIR")
-	BackupFolder = os.Getenv("LDB_BACKUP_DIR")
+	// Load config file (optional)
+	cfg, err := LoadConfig()
+	if err != nil {
+		log.Println("Load config error (using defaults):", err)
+	}
+
+	// Priority: config file > environment > platform default
+	var fBackupFolder string
 
 	switch runtime.GOOS {
 	case "darwin", "linux":
 		fHomeDir, _ := os.UserHomeDir()
 
-		if DataFolder == "" {
-			DataFolder = filepath.Join(fHomeDir, ".local/share/Hinterland/TheLongDark/Survival")
-		}
-
-		if BackupFolder == "" {
-			BackupFolder = filepath.Join(fHomeDir, "Documents/LongDarkBackup")
-		}
+		DataFolder = ResolveFolder(cfg.DataDir, os.Getenv("LDB_DATA_DIR"),
+			filepath.Join(fHomeDir, ".local/share/Hinterland/TheLongDark/Survival"))
+		fBackupFolder = ResolveFolder(cfg.BackupDir, os.Getenv("LDB_BACKUP_DIR"),
+			filepath.Join(fHomeDir, "Documents/LongDarkBackup"))
 
 	case "windows":
+		fAppData, _ := os.UserCacheDir()
+		fHomeDir, _ := os.UserHomeDir()
 
-		if DataFolder == "" {
-			fAppData, _ := os.UserCacheDir()
-			DataFolder = filepath.Join(fAppData, "Hinterland/TheLongDark/Survival")
-		}
-
-		if BackupFolder == "" {
-			fHomeDir, _ := os.UserHomeDir()
-			BackupFolder = filepath.Join(fHomeDir, "Documents/LongDarkBackup")
-		}
+		DataFolder = ResolveFolder(cfg.DataDir, os.Getenv("LDB_DATA_DIR"),
+			filepath.Join(fAppData, "Hinterland/TheLongDark/Survival"))
+		fBackupFolder = ResolveFolder(cfg.BackupDir, os.Getenv("LDB_BACKUP_DIR"),
+			filepath.Join(fHomeDir, "Documents/LongDarkBackup"))
 
 	default:
 		return fmt.Errorf("unknown OS")
@@ -76,15 +74,24 @@ func (t *Server) Start(s service.Service) error {
 	if DataFolder == "" {
 		return fmt.Errorf("DataFolder is empty")
 	}
+	if fBackupFolder == "" {
+		return fmt.Errorf("BackupFolder is empty")
+	}
+
+	if DataFolder, err = filepath.Abs(DataFolder); err != nil {
+		return err
+	}
+	if fBackupFolder, err = filepath.Abs(fBackupFolder); err != nil {
+		return err
+	}
+
 	if _, err := os.Stat(DataFolder); errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("DataFolder is not exist")
 	}
-	if BackupFolder == "" {
-		return fmt.Errorf("BackupFolder is empty")
+	if err := os.MkdirAll(fBackupFolder, 0755); err != nil {
+		log.Printf("Cannot create backup folder %s: %v", fBackupFolder, err)
 	}
-	if _, err := os.Stat(BackupFolder); errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("BackupFolder is not exist")
-	}
+	SetBackupFolder(fBackupFolder)
 
 	t.CStop = make(chan bool)
 	go func() {
@@ -102,7 +109,7 @@ func (t *Server) Start(s service.Service) error {
 	}()
 
 	// app
-	err := appSrv()
+	err = appSrv()
 	if err != nil {
 		return err
 	}

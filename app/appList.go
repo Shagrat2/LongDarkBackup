@@ -132,8 +132,9 @@ func (h *ListPage) Render() app.UI {
 
 	// Collect all backup items
 	var allItems []*TItem
+	fBackupFolder := GetBackupFolder()
 
-	filepath.WalkDir(BackupFolder, func(path string, d os.DirEntry, err error) error {
+	filepath.WalkDir(fBackupFolder, func(path string, d os.DirEntry, err error) error {
 		if d == nil || !d.IsDir() {
 			return nil
 		}
@@ -142,13 +143,13 @@ func (h *ListPage) Render() app.UI {
 		}
 
 		fPath := filepath.Base(path)
-		info, _, _ := loadData(fPath)
+		info, _ := loadInfo(fPath)
 		if info.DisplayName == "" {
 			return nil
 		}
 
 		var bt time.Time
-		if fi, err := os.Stat(filepath.Join(BackupFolder, fPath, "info.json")); err == nil {
+		if fi, err := os.Stat(filepath.Join(fBackupFolder, fPath, "info.json")); err == nil {
 			bt = fi.ModTime()
 		}
 
@@ -219,12 +220,16 @@ func (h *ListPage) Render() app.UI {
 	content := []app.UI{
 		app.Div().Class("header").Body(
 			app.H1().Text(T(MsgAppTitle)),
-			app.Div().Class("lang-switch").Body(
-				app.A().Class(ruClass).Href("/set-lang?lang=ru").
-					Attr("onclick", "localStorage.setItem('lang','ru')").Text("RU"),
-				app.Span().Class("lang-sep").Text("/"),
-				app.A().Class(enClass).Href("/set-lang?lang=en").
-					Attr("onclick", "localStorage.setItem('lang','en')").Text("EN"),
+			app.Div().Class("header-actions").Body(
+				app.A().Class("settings-link").Href("/settings").
+					Attr("title", T(MsgSettings)).Text("\u2699"),
+				app.Div().Class("lang-switch").Body(
+					app.A().Class(ruClass).Href("/set-lang?lang=ru").
+						Attr("onclick", "localStorage.setItem('lang','ru')").Text("RU"),
+					app.Span().Class("lang-sep").Text("/"),
+					app.A().Class(enClass).Href("/set-lang?lang=en").
+						Attr("onclick", "localStorage.setItem('lang','en')").Text("EN"),
+				),
 			),
 		),
 	}
